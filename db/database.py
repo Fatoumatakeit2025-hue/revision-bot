@@ -101,3 +101,17 @@ def record_answer(question_id, success, today=None, path=DB_PATH):
             (new_level, when.isoformat(), question_id),
         )
         return new_level, when
+def get_or_create_user(name, path=DB_PATH):
+    with get_connection(path) as conn:
+        row = conn.execute("SELECT id FROM users WHERE name = ?", (name,)).fetchone()
+    if row:
+        return row["id"]
+    return add_user(name, path)
+
+
+def get_courses(user_id, path=DB_PATH):
+    with get_connection(path) as conn:
+        rows = conn.execute(
+            "SELECT * FROM courses WHERE user_id = ?", (user_id,)
+        ).fetchall()
+        return [dict(r) for r in rows]
