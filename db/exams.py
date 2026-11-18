@@ -41,3 +41,38 @@ def get_exam(course_id, path=DB_PATH):
     exam = dict(row)
     exam["exam_date"] = date.fromisoformat(exam["exam_date"])
     return exam
+
+
+def _ensure_results_table(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS mock_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER NOT NULL,
+            taken_at TEXT NOT NULL,
+            score REAL NOT NULL,
+            FOREIGN KEY (course_id) REFERENCES courses(id)
+        )
+    """)
+
+
+def save_mock_result(course_id, score, path=DB_PATH, taken_at=None):
+    taken_at = taken_at or date.today()
+    with get_connection(path) as conn:
+        _ensure_results_table(conn)
+        conn.execute(
+            "INSERT INTO mock_results (course_id, taken_at, score) VALUES (?, ?, ?)",
+            (course_id, taken_at.isoformat(), score),
+        )
+
+
+def get_mock_results(course_id, path=DB_PATH):
+    with get_connection(path) as conn:
+        _ensure_results_table(conn)
+        rows = conn.execute(
+            "SELECT taken_at, score FROM mock_results WHERE course_id = ? ORDER BY id",
+            (course_id,),
+        ).fetchall()
+    return [
+        {"taken_at": date.fromisoformat(r["taken_at"]), "score": r["score"]}
+        for r in rows
+    ]
