@@ -40,6 +40,16 @@ def fiches_ia(course_id, texte, n=5):
         for c in cartes:
             add_question(course_id, c["question"], c["answer"])
         print(f"{len(cartes)} fiches enregistrées.")
+def saisir_texte():
+    print("Écris ou colle le texte du cours (termine par une ligne vide) :")
+    lignes = []
+    while True:
+        ligne = input()
+        if not ligne.strip():
+            break
+        lignes.append(ligne)
+    return "\n".join(lignes)       
+        
 def demander_examen():
     if input("Ajouter les infos de ton examen ? (o/n) : ").strip().lower() != "o":
         return None
