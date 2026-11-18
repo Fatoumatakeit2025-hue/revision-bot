@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from services.daily import daily_summary
 from db.exams import set_exam, get_exam, save_mock_result, get_mock_results
 from services.mock_exam import generate_mock_exam, grade_exam, final_score
 from services.planner import plan_revision
@@ -203,6 +204,31 @@ def reviser(user_id):
         reponse = input("Tu le savais ? (o/n) : ").strip().lower()
         _, quand = record_answer(q["id"], reponse == "o")
         print(f"Prochaine révision : {quand.strftime('%d/%m/%Y')}")
+        
+def programme_du_jour(user_id):
+    courses = get_courses(user_id)
+    if not courses:
+        print("Aucun cours pour l'instant.")
+        return
+    today = date.today()
+    print(f"\n=== Programme du {today:%d/%m/%Y} ===")
+    for c in courses:
+        s = daily_summary(
+            c,
+            get_exam(c["id"]),
+            len(get_due_questions(c["id"])),
+            get_mock_results(c["id"]),
+            today,
+        )
+        print(f"\n{s['title']}")
+        print(f"  Fiches à réviser : {s['due']}")
+        if s["days_left"] is not None and s["days_left"] >= 0:
+            print(f"  Examen dans {s['days_left']} jour(s), objectif du jour : {s['hours']:g} h")
+        if s["last_score"] is not None:
+            cible = f" (objectif {s['target']:g})" if s["target"] is not None else ""
+            print(f"  Dernier examen blanc : {s['last_score']:g}/20{cible}")
+        if s["mock_recommended"]:
+            print("  Examen blanc recommandé aujourd'hui (option 4)")        
 
 
 def main():
@@ -210,7 +236,7 @@ def main():
     user_id = get_or_create_user("moi")
     while True:
         print("\n1. Ajouter un cours   2. Réviser   3. Poser une question")
-        print("4. Examen blanc   5. Quitter")
+        print("4. Examen blanc   5. Programme du jour   6. Quitter")
         choix = input("> ").strip()
         if choix == "1":
             ajouter_cours(user_id)
@@ -223,8 +249,9 @@ def main():
             if course:
                 passer_examen_blanc(course)
         elif choix == "5":
+            programme_du_jour(user_id)
+        elif choix == "6":
             break
-
 
 if __name__ == "__main__":
     main()
